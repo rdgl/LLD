@@ -1,5 +1,18 @@
 public abstract class NotificationSender {
     protected final AuditLog audit;
-    protected NotificationSender(AuditLog audit) { this.audit = audit; }
-    public abstract void send(Notification n);
+
+    protected NotificationSender(AuditLog audit) {
+        this.audit = audit;
+    }
+
+    
+    public final void send(Notification n) {
+        validate(n);
+        doSend(n);
+        audit.add(getAuditMessage());
+    }
+
+    protected abstract void validate(Notification n);
+    protected abstract void doSend(Notification n);
+    protected abstract String getAuditMessage();
 }
