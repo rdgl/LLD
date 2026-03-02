@@ -16,19 +16,38 @@ public class TryIt {
     public static void main(String[] args) {
         TicketService service = new TicketService();
 
+        // 1. Creation
         IncidentTicket t = service.createTicket("TCK-1001", "reporter@example.com", "Payment failing on checkout");
-        System.out.println("Created: " + t);
+        System.out.println("Initial Ticket:   " + t);
 
-        // Demonstrate post-creation mutation through service
-        service.assign(t, "agent@example.com");
-        service.escalateToCritical(t);
-        System.out.println("\nAfter service mutations: " + t);
+        // 2. Service "Updates" (returns new instances)
+        IncidentTicket assigned = service.assign(t, "agent@example.com");
+        System.out.println("Assigned Ticket:  " + assigned);
 
-        // Demonstrate external mutation via leaked list reference
-        List<String> tags = t.getTags();
-        tags.add("HACKED_FROM_OUTSIDE");
-        System.out.println("\nAfter external tag mutation: " + t);
+        IncidentTicket escalated = service.escalateToCritical(assigned);
+        System.out.println("Escalated Ticket: " + escalated);
 
-        // Starter compiles; after refactor, you should redesign updates to create new objects instead.
+        // Verify original ticket 't' hasn't changed
+        System.out.println("\nOriginal ticket after 'updates': " + t);
+
+        // 3. Attempting to modify tags via list leak (should fail or have no effect)
+        try {
+            List<String> tags = escalated.getTags();
+            tags.add("HACKED_FROM_OUTSIDE");
+            System.out.println("\nAfter external tag mutation (Hacked?): " + escalated);
+        } catch (UnsupportedOperationException e) {
+            System.out.println("\nSuccessfully blocked external tag mutation: " + e.getMessage());
+        }
+
+        // 4. Validation Example
+        try {
+            IncidentTicket.builder()
+                .id("INVALID_ID_TOO_LONG_1234567890")
+                .reporterEmail("not-an-email")
+                .title("") // empty
+                .build();
+        } catch (IllegalArgumentException e) {
+            System.out.println("\nValidation worked! Caught error: " + e.getMessage());
+        }
     }
 }
